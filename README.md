@@ -2,6 +2,7 @@ Cyclistic Bike-Share Analysis
 ================
 
 ![](cyclistic_analysis_files/figure-gfm/cyclistic_logo.png)
+![cyclistic_logo](assets/cyclistic_logo.png)
 
 ## Introduction
 
@@ -47,17 +48,17 @@ Certificate capstone project. You can access the data
 ## Key Findings
 
 Casual riders tend to use the service more on weekends and for longer
-rides, suggesting leisure use. ![Average Ride Duration
-(Weekday)](cyclistic_analysis_files/figure-gfm/weekly_average_ride_duration.png)
+rides, suggesting leisure use.
+![avg_ride_duration_weekday](assets/weekly_average_ride_duration.png)
 
 Annual members consistently use the service for shorter, more frequent
-rides, indicating commuting or routine travel. ![Distribution of Ride
-Length by
-Membership](cyclistic_analysis_files/figure-gfm/ride_length_by_membership.png)
+rides, indicating commuting or routine travel.
+![avg_ride_duration_member](assets/ride_length_by_membership.png)
 
 Seasonality affects usage patterns, with higher activity during warmer
-months. ![Ride Count By Membership
-(Month)](cyclistic_analysis_files/figure-gfm/monthly_ride_count_by_membership.png)
+months.
+![ride_count_membership](assets/monthly_ride_count_by_membership.png)
+
 
 ## Recommendations
 

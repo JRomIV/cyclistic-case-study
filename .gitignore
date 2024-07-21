@@ -1,7 +1,2 @@
-*.csv
-Cyclistic_Case_Study.Rproj
-README.Rmd
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
+data/trip_data/
+
