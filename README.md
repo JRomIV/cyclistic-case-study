@@ -7,7 +7,7 @@
 This repository contains an analysis of **Cyclistic**, a fictional bike-share company based in Chicago. The overall objective is to uncover insights to develop a marketing strategy to convert casual riders into annual members. By analyzing Cyclistic’s bike trip data, we aim to understand how different types of customers use the service and identify opportunities to encourage casual riders to purchase annual memberships.
 
 ### The analysis will seek to answer the following questions:
-1. What are the general riding behaviors of our riders?
+1. What are the overall riding patterns of our users?
 2. What are the differences between member and casual riders?
 3. Is there a notable difference between our members and casual riders week by week?
 4. How does rider behaviour change month to month?
@@ -290,7 +290,7 @@ stations_map_cluster
 
 
 
-### 1. What are the general riding behaviors of our riders? #################################################
+### 1. What are the overall riding patterns of our users? #################################################
 ``` r
 # General overview of stats
 general_summary <- all_trips3 %>%
