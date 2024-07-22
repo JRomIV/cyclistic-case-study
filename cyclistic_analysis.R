@@ -61,7 +61,7 @@ all_trips$ride_length_sec <- as.numeric(all_trips$ride_length_sec)
 # Identify the number of NA values in the dataset
 colSums(is.na(all_trips))
 
-# Create two station lists (start stations and end stations)
+# Create lists of start and end stations with their coordinates
 start_station_list <- all_trips %>%
   filter(!is.na(start_station_name)) %>% 
   distinct(start_station_id, start_lat, start_lng, .keep_all = T) %>%
@@ -78,13 +78,10 @@ end_station_list <- all_trips %>%
          lat = end_lat,
          lng = end_lng)
 
-# Vertically bind rows to create one station list
+# Combine start and end station lists
 full_station_list <- bind_rows(start_station_list, end_station_list)
 
-# Filter stations where different station ids are associated with the same set of coordinates
-# Due to non-standardized naming conventions, some station names contain prefixes or variations of the same name
-# Station ids are not associated with different station names just variations of the same name
-# In order to avoid a 'many-to-many' relationship error the first instance is used in our new list
+# Filter to ensure unique station names per coordinate pair
 full_station_list <- full_station_list %>% 
   group_by(lat, lng) %>% 
   filter(n_distinct(station_id) == 1) %>% 
@@ -93,20 +90,20 @@ full_station_list <- full_station_list %>%
   ungroup()
 
 
-# Join to our main data frame (all_trips) with our new station list
+# Join with the main dataset to recover missing start station names and IDs
 all_trips2 <- left_join(all_trips, full_station_list,
                         by = c("start_lat" = "lat",
                                "start_lng" = "lng"))
 View(all_trips2)
 
 
-# Move over recovered start station names and id's
+# Coalesce joined start station names
 all_trips2 <- all_trips2 %>%
   mutate(start_station_name = coalesce(start_station_name, station_name),
          start_station_id = coalesce(start_station_id, station_id)) %>% 
   select(-station_name, -station_id)
 
-# lets do the same for the end station name's and id's
+# Join with the main dataset to recover missing end station names and IDs
 all_trips2 <- left_join(all_trips2, full_station_list,
                         by = c("end_lat" = "lat", "end_lng" = "lng"))
 
