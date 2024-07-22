@@ -240,7 +240,7 @@ ggplot(all_trips2, aes(x = ride_length_sec/3600, fill = rideable_type)) +
   facet_wrap(~rideable_type) +
   scale_fill_brewer(palette = "Dark2")
 ```
-![ride_length_log](assets\ride_length_log.png)
+![ride_length_log](assets/ride_length_log.png)
 
 
 #### Cleaning Erroneous Data and Calculating Distance
