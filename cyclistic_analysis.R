@@ -120,13 +120,6 @@ print(colSums(is.na(all_trips2)))
 
 ########################### Identifying Extreme Outliers ##############################
 
-
-# Calculate the distance using the Haversine formula (Output is in meters)
-# This is euclidean distance and is not a reflection of of road network distance
-all_trips2 <- all_trips2 %>%
-  rowwise() %>% 
-  mutate(geo_distance_meters = distHaversine(c(start_lng, start_lat), c(end_lng, end_lat)))
-
 # Distribution of ride length
 summary(all_trips2$ride_length_sec)
 
@@ -156,12 +149,21 @@ ggplot(all_trips2, aes(x = ride_length_sec/3600, fill = rideable_type)) +
   facet_wrap(~rideable_type) +
   scale_fill_brewer(palette = "Dark2")
 
+
+# Calculate the distance using the Haversine formula (Output is in meters)
+# This is euclidean distance and is not a reflection of of road network distance
+all_trips2 <- all_trips2 %>%
+  rowwise() %>% 
+  mutate(geo_distance_meters = distHaversine(c(start_lng, start_lat), c(end_lng, end_lat)))
+
+
 # Filter and examine erroneous data
 invalid_trips <- all_trips2 %>% 
   filter((ride_length_sec <= 0 |
             (geo_distance_meters == 0 & ride_length_sec <= 60)) |
            start_station_name == "Pawel Bialowas - Test- PBSC charging station")
 View(invalid_trips)
+
 
 # After review, remove NA values and erroneous trips
 all_trips3 <- all_trips2 %>%
