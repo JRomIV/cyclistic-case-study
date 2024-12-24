@@ -5,9 +5,6 @@ library(leaflet)
 library(leaflet.extras)
 theme_set(theme_bw())
 
-
-###########################  Importing Data ###########################
-
 # Load all the trip files into a list
 triplist <- list.files(pattern = "*.csv")
 triplist
@@ -31,7 +28,6 @@ summary(all_trips)
 str(all_trips)
 View(all_trips)
 
-
 ###########################  Data Wrangling  ###########################
 
 
@@ -53,6 +49,11 @@ all_trips$ride_length_sec <- difftime(all_trips$ended_at, all_trips$started_at)
 
 # convert ride_length_sec to numeric format
 all_trips$ride_length_sec <- as.numeric(all_trips$ride_length_sec)
+
+
+# rename member to subscriber
+all_trips <- all_trips %>%
+  mutate(member_casual = recode(member_casual,"member" = "subscriber"))
 
 
 ### Addressing missing station names ###
@@ -117,7 +118,6 @@ all_trips2 <- all_trips2 %>%
 print(colSums(is.na(all_trips)))
 print(colSums(is.na(all_trips2)))
 
-
 ########################### Identifying Extreme Outliers ##############################
 
 # Distribution of ride length
@@ -147,7 +147,7 @@ ggplot(all_trips2, aes(x = ride_length_sec/3600, fill = rideable_type)) +
   scale_y_log10(labels = scales::comma_format()) + 
   xlim(0, 700) +
   facet_wrap(~rideable_type) +
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Set1")
 
 
 # Calculate the distance using the Haversine formula (Output is in meters)
@@ -173,192 +173,144 @@ all_trips3 <- all_trips2 %>%
 
 ########################### Data Analysis ##############################
 
+# Total statistics summary
+general_summary <- all_trips3 %>%
+  group_by() %>%
+  summarize("Total Number of Rides" = n(),
+            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
+            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
+            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137))
+View(general_summary)
 
+
+
+# Members statistics summary 
+member_summary <- all_trips3 %>% 
+  group_by(member_casual) %>% 
+  summarize(
+    "Total Rides" = n(),
+    "Avg Ride Length" = mean(ride_length_sec / 60),
+    "Avg Ride Distance (euclidean Miles)" = mean(geo_distance_meters * 0.00062137))
+
+
+# 1a. Ride Count bar chart (Casual/Subscriber)
+ggplot(member_summary, aes(x = member_casual, y = `Total Rides`, fill = member_casual)) +
+  geom_col(color = "black") +
+  geom_text(aes(label = `Total Rides`), vjust = -0.5, size = 4) +
+  labs(title = "Total Number of Rides (Casual/Annual Subscriber)",
+       x = "Rider Type",
+       y = "Total Number of Rides") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+
+
+# 1b.Avg Ride Length
+ggplot(all_trips3, aes(x = ride_length_sec / 60, fill = member_casual)) +
+  geom_density(alpha = 0.7) +
+  geom_vline(xintercept = 12.69740, linetype = "dashed", color = "#4095A5", size = 1.2) +
+  geom_vline(xintercept = 25.05755, linetype = "dashed", color = "#D9E62C", size = 1.2) +
+  annotate("text", x = 11.5, y = 0.062, label = "Avg for Subscribers: 12.69 Mins", angle = 90, color = "black") +
+  annotate("text", x = 23.8, y = 0.062, label = "Avg for Casual Riders: 25.05 Mins", angle = 90, color = "black") +
+  labs(title = "Casual Riders Have Longer Ride Durations: Density of Ride Length",
+       x = "Ride Length (Minutes)",
+       y = "Density") +
+  scale_x_continuous(breaks = seq(0, 120, by = 10), limits = c(0, 120)) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+
+
+# 1c. Avg Ride Distance
+ggplot(member_summary, aes(x = member_casual, y = `Avg Ride Distance (euclidean Miles)`, fill = member_casual)) +
+  geom_col(color = "black") +
+  geom_text(aes(label = round(`Avg Ride Distance (euclidean Miles)`, 2)), vjust = -0.5, size = 4) +
+  labs(title = "Average Ride Distance (Straight-Line Miles)",
+       x = "Rider Type",
+       y = "Euclidean Miles") +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+
+
+# 2a. Bar chart for weekly ride count
+ggplot(all_trips3 %>%
+         group_by(member_casual, weekday) %>%
+         summarize(total_rides = n()),
+       aes(x = weekday, y = total_rides, fill = member_casual)) +
+  geom_col(color = "black", position = "dodge") +
+  labs(title = "Total Rides by Weekday (Casual vs. Annual Subscriber)",
+       x = "Weekday",
+       y = "Total Rides") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+
+
+# 2b. Bar chart for monthly ride count
+ggplot(all_trips3 %>%
+         group_by(member_casual, month) %>%
+         summarize(total_rides = n()),
+       aes(x = month, y = total_rides, fill = member_casual)) +
+  geom_col(color = "black", position = "dodge") +
+  labs(title = "Total Rides by Month (Casual vs. Annual Subscriber)",
+       x = "Month",
+       y = "Total Rides") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+
+
+
+# 3a. Top 10 stations
+# since both start and end stations are identical, combine to condense presentation
+# Combine start and end station counts into a single summary
+popular_stations <- all_trips3 %>%
+  filter(member_casual == "casual") %>%
+  pivot_longer(cols = c(start_station_name, end_station_name), values_to = "station_name") %>%
+  count(station_name, name = "total_rides", sort = TRUE) %>%
+  slice_head(n = 10)
+
+# Popular stations bar chart
+ggplot(popular_stations, aes(x = reorder(station_name, total_rides), y = total_rides)) +
+  geom_col(color = "black", fill = "#F2FC67") +
+  coord_flip() +
+  labs(title = "Top 10 Stations for Casual Riders (Start and End Combined)",
+       x = "Station Name",
+       y = "Total Rides") +
+  scale_y_continuous(labels = scales::comma_format())
+
+
+# 3b. popular station map
 # Create a station list to have one set of coordinates per station
 map_station_list <- full_station_list %>% 
   distinct(station_id, station_name, .keep_all = T)
 
 
-# Create a cluster leaflet map
-stations_map_cluster <- leaflet(map_station_list) %>%
+# Add a flag to indicate whether each station is popular
+map_station_list <- map_station_list %>%
+  mutate(is_popular = ifelse(station_name %in% popular_stations$station_name, TRUE, FALSE))
+
+
+# Create the combined map (popular stations in Lime)
+stations_map_highlight <- leaflet(map_station_list) %>%
   addProviderTiles(provider = "Stadia.AlidadeSmoothDark") %>%
   setView(lng = -87.70, lat = 41.85,
           zoom = 11) %>%
-  addMarkers(lng = ~lng, lat = ~lat,
-             popup = ~paste("Station ID: ", station_id, "<br>Station Name: ", station_name),
-             clusterOptions = markerClusterOptions())
-stations_map_cluster
+  addCircleMarkers(
+    lng = ~lng, lat = ~lat,
+    popup = ~paste("Station Name: ", station_name),
+    radius = ~ifelse(is_popular, 14, 2),
+    color = ~ifelse(is_popular, "#F2FC67", "#577B8A"),
+    fillOpacity = 0.9)
+stations_map_highlight
 
 
-### General summary ###
 
-
-# Total number of rides exceeds 5 million trips (Excluding NA values and those defined as erroneous)
-# Shortest ride is 1 second, with the longest being approximately 678 hours
-# The substantial difference between the 95th and 99th percentile indicates a small portion of rides are significantly longer than most rides
-# The high standard deviation compared to the average length indicates a notable range in ride length.
-general_summary <- all_trips3 %>%
-  group_by() %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(general_summary)
-
-
-# A general re-examination of the distribution of ride length (Limited to 120 Minutes)
-# IQR is 13.27 minutes suggesting the middle 50% of ride lengths are relatively close to the median. 
-ggplot(all_trips3, aes(x = ride_length_sec/60)) +
-  geom_boxplot(fill = "darkblue", outlier.color = "darkred", alpha = 0.1) +
-  labs(title = "Distribution of Rides under 120 minutes",
-       x = "Ride Length (minutes)",
-       y = "") +
-  annotate("Text", x = 62.5, y = 0.045, label = "Outliers", size = 5) +
-  scale_x_continuous(breaks = seq(0, 120, by = 10), limits = c(0, 120))
-
-
-### member summary ###
-
-
-# Members statistics
-# Significantly higher standard deviation for casual riders suggests that there is more variability in their ride lengths.
-member_summary <- all_trips3 %>%
-  group_by(member_casual) %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(member_summary)
-
-
-# Total number of rides between Members and casual riders
-# Non-members consist of 41% of the rides
-ggplot(member_summary, aes(x = member_casual, y = `Total Number of Rides`, fill = member_casual)) +
-  geom_col() +
-  geom_text(aes(label = `Total Number of Rides`), vjust = -0.5, size = 4) +
-  labs(title = "Total Number of Rides (Casual/Member)",
-       x = "Rider Type",
-       y = "Total Number of Rides") +
+# 4. Bike type
+# Create a grouped bar chart by bike type
+ggplot(all_trips3 %>%
+    group_by(member_casual, rideable_type) %>%
+    summarize(total_rides = n(), .groups = "drop") %>%
+    mutate(rideable_type = reorder(rideable_type, -total_rides)),
+  aes(x = rideable_type, y = total_rides, fill = member_casual)) +
+  geom_col(color = "black", position = "dodge") +
+  labs(title = "Bike Type Usage by Rider Type",
+    x = "Bike Type",
+    y = "Total Rides",
+    fill = "Rider Type") +
   scale_y_continuous(labels = scales::comma_format()) +
-  scale_fill_brewer(palette = "Dark2")
-
-# Distribution of ride length
-# Non-members average ride duration is twice as long as members despite members using the service more frequently.
-ggplot(all_trips3, aes(x = ride_length_sec / 60, fill = member_casual)) +
-  geom_density(alpha = 0.7) +
-  geom_vline(xintercept = 12.69740, linetype = "dotted", color = "darkorange", size = 0.85) +
-  geom_vline(xintercept = 25.05755, linetype = "dotted", color = "turquoise", size = 0.85) +
-  annotate("text", x = 11.5, y = 0.062, label = "Avg for Member Riders 12.69 Mins", angle = 90) +
-  annotate("text", x = 23.8, y = 0.062, label = "Avg for Casual Riders 25.05 Mins", angle = 90) +
-  labs(title = "Distribution of Ride Length by Membership Type (0 - 120 Minutes)",
-       x = "Ride Length (Minutes)",
-       y = "Density") +
-  scale_x_continuous(breaks = seq(0, 120, by = 10), limits = c(0, 120)) +
-  scale_fill_brewer(palette = "Dark2")
-
-
-### weekday summary ###
-
-
-# The 95th and 99th percentile of ride length from casual riders are consistently 2-3 times longer than those from members. 
-weekday_summary <- all_trips3 %>%
-  group_by(weekday, member_casual) %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(weekday_summary)
-
-# Total number of rides by weekday
-# Casual ride count goes up throughout the week, peaking on Saturday
-# Member riders slightly decrease throughout the week, reaching a low point on Sunday.
-ggplot(weekday_summary, aes(x = weekday, y = `Total Number of Rides`, fill = member_casual)) +
-  geom_col(position = "dodge") +
-  labs(title = "Memebrship Type's Ride Count (Weekday)",
-       x = "",
-       y = "Number of Rides") +
-  scale_y_continuous(labels = scales::comma_format()) +
-  scale_fill_brewer(palette = "Dark2")
-
-
-# Average ride duration by member type (Weekday)
-# Casual rides tend to have longer rides on the weekends suggesting they may be using the service for leisure.
-# Member rides are consistently shorter which may suggest they are using the service for commuting. 
-ggplot(weekday_summary, aes(x = weekday, y = `Average Ride Length (Minutes)`, fill = member_casual)) +
-  geom_col(position = "dodge") +
-  labs(title = "Memebrship Type's Average Ride Duration (Weekday)",
-       x = "",
-       y = "Avg Ride Length (Minutes)") +
-  scale_fill_brewer(palette = "Dark2")
-
-
-### month summary ###
-
-
-# Shortest ride length remains at 1 second throughout the year, suggesting there is a consistent recording error. 
-# IQR is higher during the warmer months
-# 99th percentile are higher during the warmer months
-# Its clear rider activity is influenced by the weather.
-month_summary <- all_trips3 %>%
-  group_by(month) %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(month_summary)
-
-
-# Plot monthly ride count by membership type
-# The amount of rides drop significantly in the winter months, peaking in September.
-# During the slower months it appears members ride twice as much as casual riders. 
-all_trips3 %>% 
-  group_by(month, member_casual) %>% 
-  summarize("Number of Rides" = n()) %>% 
-  ggplot(aes(x = month, y = `Number of Rides`, fill = member_casual)) +
-  geom_col(position = "dodge") +
-  labs(title = "Ride Count by Membership Type (Month)",
-       x = "",
-       y = "Ride Count") +
-  scale_y_continuous(labels = scales::comma_format()) +
-  scale_fill_brewer(palette = "Dark2")
-
-
-# Plot monthly average ride by membership type
-# Casual riders trip length are about twice as long as members. This is consistent throughout the year.
-all_trips3 %>%
-  group_by(month, member_casual) %>%
-  summarize(average_duration = mean(ride_length_sec/60)) %>%
-  ggplot(aes(x = month, y = average_duration, fill = member_casual)) +
-  geom_col(position = "dodge") + 
-  labs(title = "Average Ride Duration by Membership Type (Month)",
-       x = "", 
-       y = "Ride Duration (Minutes)") +
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))

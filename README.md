@@ -4,13 +4,13 @@
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Introduction
-This repository contains an analysis of **Cyclistic**, a fictional bike-share company based in Chicago. The overall objective is to uncover insights to develop a marketing strategy to convert casual riders into annual members. By analyzing Cyclistic’s bike trip data, we aim to understand how different types of customers use the service and identify opportunities to encourage casual riders to purchase annual memberships.
+This repository contains an analysis of data from **Cyclistic**, a fictional bike-share company based in Chicago. The overall objective is to uncover insights to develop a marketing strategy to convert casual riders into annual members. By analyzing Cyclistic’s bike trip data, we aim to understand how different types of customers use the service and identify opportunities to encourage casual riders to purchase annual memberships.
 
 ### The analysis will seek to answer the following questions:
-1. What are the overall riding patterns of our users?
-2. What are the differences between member and casual riders?
-3. Is there a notable difference between our members and casual riders week by week?
-4. How does rider behaviour change month to month?
+1. How do the number of rides, average ride duration, and ride distance differ between casual riders and subscribing members?
+2. Which days (e.g., weekdays vs. weekends) and seasons see the highest usage from casual riders and subscribing members?"
+3. What are the most popular locations for casual riders?
+4. Which bike types are most frequently used by casual riders, and how does this compare to those of subscribing members?
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Tools
 - **Excel**: For CSV management
@@ -21,17 +21,21 @@ This repository contains an analysis of **Cyclistic**, a fictional bike-share co
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Data Source
-The analysis is based on **Cyclistic’s** trip data, which includes information about each ride taken with the service over the past year. The dataset covers various aspects of the rides, such as start/end times, station names, ride length, and user type (casual or member). The data was provided as part of the Google Data Analytics Professional Certificate capstone project. You can access the updated data souce [here](https://divvy-tripdata.s3.amazonaws.com/index.html) or within the [data folder](data) of this repository.
+The analysis is based on **Cyclistic’s** CSV trip data, which includes information about each ride taken with the service over the past year. The dataset covers various aspects of the rides, such as start/end times, station names, ride length, and user type (casual or subscribing member). You can access the updated data souce [here](https://divvy-tripdata.s3.amazonaws.com/index.html) or within the [data folder](data) of this repository.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Data Preparation and Cleanup
-The script includes steps for loading, cleaning, and preparing the data for analysis. This involves merging multiple CSV files, handling missing values, and creating new variables for analysis.
+The script includes steps for loading, cleaning, and preparing the data for analysis. This involves merging multiple CSV files, handling missing values, identifying outliers, and creating new variables for analysis.
+
 
 
 
 ## Load Libraries #################################################
-To start with, we load the necessary libraries for our analysis. These libraries provide functions for data manipulation, visualization, and spatial analysis.
+To start, we load the necessary libraries for our analysis. These libraries provide functions for data manipulation, visualization, and spatial analysis.
+<details>
+<summary>Click to view code</summary>
+
 ```r
 library(geosphere)
 library(leaflet)
@@ -39,15 +43,36 @@ library(leaflet.extras)
 library(tidyverse)
 theme_set(theme_bw())
 ```
+</details> 
+
+
 
 
 
 ## Importing Data #################################################
 The data was originally divided into 13 CSV files, which were merged using the following code. This process involves importing the files into a list, evaluating their structure, and combining them into a single data frame. The data was then verified to be structurally sound before proceeding with the analysis.
 
-Key things to note:
-- There are no duplications for the primary key
-- There is a total of 6,584,382 rows
+**Key things to note:**
+- No duplications within the primary key (ride_id)
+- Total of 6,584,382 rows
+#### Preview of all_trips Dataframe
+
+| ride_id         | rideable_type | started_at          | ended_at            | start_station_name | start_station_id | end_station_name | end_station_id | start_lat | start_lng | end_lat  | end_lng  | member_casual |
+|-----------------|---------------|---------------------|---------------------|--------------------|------------------|------------------|----------------|-----------|-----------|----------|----------|---------------|
+| 9DC7B962304CBFD8 | electric_bike | 2021-09-28 16:07:10 | 2021-09-28 16:09:54 | NA                 | NA               | NA               | NA             | 41.89000  | -87.68000 | 41.89000 | -87.67000 | casual        |
+| F930E2C6872D6B32 | electric_bike | 2021-09-28 14:24:51 | 2021-09-28 14:40:05 | NA                 | NA               | NA               | NA             | 41.94000  | -87.64000 | 41.98000 | -87.67000 | casual        |
+| 6EF72137900BB910 | electric_bike | 2021-09-28 00:20:16 | 2021-09-28 00:23:57 | NA                 | NA               | NA               | NA             | 41.81000  | -87.72000 | 41.80000 | -87.72000 | casual        |
+| 78D1DE133B3DBF55 | electric_bike | 2021-09-28 14:51:17 | 2021-09-28 15:00:06 | NA                 | NA               | NA               | NA             | 41.80000  | -87.72000 | 41.81000 | -87.72000 | casual        |
+| E03D4ACDCAEF6E00 | electric_bike | 2021-09-28 09:53:12 | 2021-09-28 10:03:44 | NA                 | NA               | NA               | NA             | 41.88000  | -87.74000 | 41.88000 | -87.71000 | casual        |
+| 346DE323A2677DC0 | electric_bike | 2021-09-28 01:53:18 | 2021-09-28 02:00:02 | NA                 | NA               | NA               | NA             | 41.87000  | -87.75000 | 41.88000 | -87.74000 | casual        |
+| 558CE7087B42D8DB | electric_bike | 2021-09-28 07:15:56 | 2021-09-28 07:38:25 | NA                 | NA               | NA               | NA             | 41.74000  | -87.63000 | 41.74000 | -87.56000 | casual        |
+| 3EF7CB1851930A1F | electric_bike | 2021-09-28 11:17:00 | 2021-09-28 11:40:17 | NA                 | NA               | NA               | NA             | 41.74000  | -87.56000 | 41.75000 | -87.63000 | casual        |
+| 1F9A9A6BA4C2F82E | electric_bike | 2021-09-27 19:57:09 | 2021-09-27 20:09:08 | NA                 | NA               | NA               | NA             | 41.95000  | -87.76000 | 41.95000 | -87.76000 | casual        |
+| CAA3791DE7300B8E | electric_bike | 2021-09-28 11:01:26 | 2021-09-28 11:22:56 | NA                 | NA               | NA               | NA             | 41.93000  | -87.69000 | 41.95000 | -87.75000 | casual        |
+
+<details>
+<summary>Click to view code</summary>
+
 ``` r
 # Load all the trip files into a list
 triplist <- list.files(pattern = "*.csv")
@@ -70,27 +95,22 @@ summary(all_trips)
 str(all_trips)
 View(all_trips)
 ```
-#### Preview of all_trips Dataframe
-
-| ride_id         | rideable_type | started_at          | ended_at            | start_station_name | start_station_id | end_station_name | end_station_id | start_lat | start_lng | end_lat  | end_lng  | member_casual |
-|-----------------|---------------|---------------------|---------------------|--------------------|------------------|------------------|----------------|-----------|-----------|----------|----------|---------------|
-| 9DC7B962304CBFD8 | electric_bike | 2021-09-28 16:07:10 | 2021-09-28 16:09:54 | NA                 | NA               | NA               | NA             | 41.89000  | -87.68000 | 41.89000 | -87.67000 | casual        |
-| F930E2C6872D6B32 | electric_bike | 2021-09-28 14:24:51 | 2021-09-28 14:40:05 | NA                 | NA               | NA               | NA             | 41.94000  | -87.64000 | 41.98000 | -87.67000 | casual        |
-| 6EF72137900BB910 | electric_bike | 2021-09-28 00:20:16 | 2021-09-28 00:23:57 | NA                 | NA               | NA               | NA             | 41.81000  | -87.72000 | 41.80000 | -87.72000 | casual        |
-| 78D1DE133B3DBF55 | electric_bike | 2021-09-28 14:51:17 | 2021-09-28 15:00:06 | NA                 | NA               | NA               | NA             | 41.80000  | -87.72000 | 41.81000 | -87.72000 | casual        |
-| E03D4ACDCAEF6E00 | electric_bike | 2021-09-28 09:53:12 | 2021-09-28 10:03:44 | NA                 | NA               | NA               | NA             | 41.88000  | -87.74000 | 41.88000 | -87.71000 | casual        |
-| 346DE323A2677DC0 | electric_bike | 2021-09-28 01:53:18 | 2021-09-28 02:00:02 | NA                 | NA               | NA               | NA             | 41.87000  | -87.75000 | 41.88000 | -87.74000 | casual        |
-| 558CE7087B42D8DB | electric_bike | 2021-09-28 07:15:56 | 2021-09-28 07:38:25 | NA                 | NA               | NA               | NA             | 41.74000  | -87.63000 | 41.74000 | -87.56000 | casual        |
-| 3EF7CB1851930A1F | electric_bike | 2021-09-28 11:17:00 | 2021-09-28 11:40:17 | NA                 | NA               | NA               | NA             | 41.74000  | -87.56000 | 41.75000 | -87.63000 | casual        |
-| 1F9A9A6BA4C2F82E | electric_bike | 2021-09-27 19:57:09 | 2021-09-27 20:09:08 | NA                 | NA               | NA               | NA             | 41.95000  | -87.76000 | 41.95000 | -87.76000 | casual        |
-| CAA3791DE7300B8E | electric_bike | 2021-09-28 11:01:26 | 2021-09-28 11:22:56 | NA                 | NA               | NA               | NA             | 41.93000  | -87.69000 | 41.95000 | -87.75000 | casual        |
+</details>
 
 
 
 
 ## Data Wrangling #################################################
 ### Extrapolation of Dates and Ride Length
-Additional preparation to extrapolate date columns for analysis and calculate the ride length of bike rides.
+To prepare for analysis of temporal trends and ride characteristics, several new columns were created:
+- **Month** and **Weekday** were extracted from the ride start time to analyze seasonal and weekly patterns.
+- **Ride Length** was calculated as the duration of each ride in seconds to compare usage behaviors.
+- The term **"members"** was renamed to **"subscribers"** for greater clarity and consistency with the business goal of converting casual riders into subscribing members.
+
+
+<details>
+<summary>Click to view code</summary>
+
 ``` r
 # Extrapolation of dates
 all_trips$date <- as.Date(all_trips$started_at)
@@ -110,12 +130,34 @@ all_trips$ride_length_sec <- difftime(all_trips$ended_at, all_trips$started_at)
 
 # convert ride_length_sec to numeric format
 all_trips$ride_length_sec <- as.numeric(all_trips$ride_length_sec)
+
+# rename member to subscriber
+all_trips <- all_trips %>%
+  mutate(member_casual = recode(member_casual,"member" = "subscriber"))
 ```
+</details>
+
+
+
+
 
 
 
 ### Addressing Missing Station Names #################################################
-To address missing station names, the following process was implemented to populate missing values using the coordinates of known stations. Stations with multiple coordinate pairs were excluded to ensure data accuracy. Also the process was limited due to the cross proximity of the stations.
+To enhance data accuracy and completeness, missing station names and IDs were populated using the coordinates of known stations. This process ensured that:
+- Missing start and end station names/IDs were filled when possible using station coordinates.
+- Stations with ambiguous coordinates (e.g., multiple stations sharing the same coordinates) were excluded to maintain data reliability.
+
+#### Recovered Stations Names and Id's
+| Data Frame            | start_station_name | start_station_id | end_station_name | end_station_id |
+|-----------------------|--------------------|------------------|------------------|----------------|
+| all_trips             | 988,145            | 988,143          | 1,057,488        | 1,057,488      |
+|   all_trips2          | 759,720            | 759,718          | 817,437          | 817,437        |
+| `Difference`          | **228,425**        | **228,425**      | **240,051**      | **240,051**    |
+
+<details>
+<summary>Click to view code</summary>
+
 ``` r
 # Identify the number of NA values in the dataset
 colSums(is.na(all_trips))
@@ -167,20 +209,12 @@ all_trips2 <- all_trips2 %>%
   mutate(end_station_name = coalesce(end_station_name, station_name),
          end_station_id = coalesce(end_station_id, station_id)) %>% 
   select(-station_name, -station_id)
-```
 
-
-#### Recovered stations names and Id's
-``` r
+# printing total amount of recovered station names and id's
 print(colSums(is.na(all_trips)))
 print(colSums(is.na(all_trips2)))
 ```
-
-| Data Frame            | start_station_name | start_station_id | end_station_name | end_station_id |
-|-----------------------|--------------------|------------------|------------------|----------------|
-| all_trips             | 988,145            | 988,143          | 1,057,488        | 1,057,488      |
-|   all_trips2          | 759,720            | 759,718          | 817,437          | 817,437        |
-| `Difference`          | **228,425**        | **228,425**      | **240,051**      | **240,051**    |
+</details>
 
 
 
@@ -188,33 +222,57 @@ print(colSums(is.na(all_trips2)))
 
 
 ### Identifying Extreme Outliers #################################################
-After reviewing the overall data, it became clear the presence of significant outliers are potentially skewing the analysis.  This suggests potential data entry errors and the need for careful handling of extreme outliers.
-- Minimum value of **-621,201 seconds** 
-- Maximum value of **2,442,301 seconds**.
+After reviewing the overall data significant outliers were identified in ride length, with values exceeding typical ride durations. Suggesting potential data entry errors and the need for careful handling of extreme outliers.
+
+#### Ride Length Distribution Summary (Seconds)
+<details>
+<summary>Click to view code</summary>
 
 ``` r
 # Distribution of ride length
 summary(all_trips2$ride_length_sec)
 ```
+</details>
 
-#### Ride Length Distribution Summary
 | Min.    | 1st Qu. | Median | Mean  | 3rd Qu. | Max.     |
 |---------|---------|--------|-------|---------|----------|
 | -621,201| 362     | 640    | 1,182 | 1,150   | 2,442,301|
 
 
+
+
+
+
+
+#### 4th Quartile Ride Length Percentiles (Seconds)
+<details>
+<summary>Click to view code</summary>
+
 ``` r
 # Calculate percentiles for ride length in groups of 0.05
 fourth_quar_ride_length <- quantile(all_trips2$ride_length_sec, probs = c(.80, .85, .90, .95, .99, .998, .999, 1))
 ```
-#### 4th Quartile Ride Length Percentiles
+</details>
+
 | Percentile | 80%    | 85%    | 90%    | 95%    | 99%    | 99.8%   | 99.9%   | 100%      |
 |------------|--------|--------|--------|--------|--------|---------|---------|-----------|
 | Value      | 1,335  | 1,589  | 1,981  | 2,811  | 6,611  | 18,122  | 67,331  | 2,442,301 |
 
 
+
+
+
+
+
 #### Boxplot of Ride Distribution
-The below boxplot displays the distrubtion of ride length, its apparent the extreme outliers are distorting the graph.
+The boxplot below portrays the distribution of ride lengths, segmented by bike type. It clearly illustrates how **extreme outliers distort the dataset**.
+- The extreme outliers, marked in red, are significantly larger than the interquartile range (IQR), skewing the overall representation of ride lengths.
+- These outliers predominantly affect the docked bike category, suggesting possible data recording issues or anomalies specific to this type.
+
+![ride_length_boxplot](assets/ride_length_boxplot.png)
+<details>
+<summary>Click to view code</summary>
+
 ``` r
 # creating a boxplot of ride distrubtion
 ggplot(all_trips2, aes(x = ride_length_sec/3600, color = rideable_type)) +
@@ -223,11 +281,22 @@ ggplot(all_trips2, aes(x = ride_length_sec/3600, color = rideable_type)) +
        x = "Ride Length (Hours)") +
   annotate("Text", x = 312, y = 0.04, label = " Majority of Outliers", size = 5)
 ```
-![ride_length_boxplot](assets/ride_length_boxplot.png)
+</details>
+
+
+
+
+
+
 
 
 #### Distribution By Bike Type
-The distribution is vast with great extremes, with a majority of outliers associated with the docked bikes. Indicating an error when collecting data for the docked bikes. 
+This histogram highlights the ride length distribution for each bike type on a log scale, providing a clear view of the **disparity between docked bikes** and the other bike types. 
+
+![ride_length_log](assets/ride_length_log.png)
+<details>
+<summary>Click to view code</summary>
+
 ``` r
 # Creating log distrubtion of ride length by bike type chart
 ggplot(all_trips2, aes(x = ride_length_sec/3600, fill = rideable_type)) +
@@ -238,13 +307,26 @@ ggplot(all_trips2, aes(x = ride_length_sec/3600, fill = rideable_type)) +
   scale_y_log10(labels = scales::comma_format()) + 
   xlim(0, 700) +
   facet_wrap(~rideable_type) +
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Set1")
 ```
-![ride_length_log](assets/ride_length_log.png)
+</details>
+
+
 
 
 #### Cleaning Erroneous Data and Calculating Distance
-This section performs additional data cleaning and error handling by calculating distances and filtering out invalid trips. Invalid data is defined as non-positive ride lengths, zero distances for trips less than or equal to 60 seconds, and trips starting from a specific test station. 
+Additional data cleaning was conducted to address invalid trips and calculate the distances traveled:
+
+- **Distance Calculation:** The Haversine formula was applied to calculate the straight-line (Euclidean) distance between start and end points for each ride.
+- **Filtering Invalid Trips:** The following were identified as invalid and excluded:
+  1. Rides with non-positive durations.
+  2. Rides with zero distances lasting 60 seconds or less.
+  3. Rides originating from the test station: *Pawel Bialowas - Test- PBSC charging station*
+- **Handling Missing Values:** NA values and flagged invalid trips were removed to ensure data consistency.
+
+<details>
+<summary>Click to view code</summary>
+
 ``` r
 # Calculate the distance using the Haversine formula (Output is in meters)
 # This is euclidean distance and is not a reflection of of road network distance
@@ -264,306 +346,322 @@ all_trips3 <- all_trips2 %>%
   na.omit() %>%
   anti_join(invalid_trips, by = "ride_id")
 ```
+</details>
+
+
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Analysis
-#### Cluster Station Map
-To gain a visual understanding of the rides and locations, a map was created to provide a physical overview of the bike stations.
+### General Statistics
+Before diving into specific questions, here are some general statistics about the dataset, to provide an overview of Cyclistic's bike-sharing usage:
+
+| Metric                                  | Value      |
+|-----------------------------------------|------------|
+| Total Number of Rides                   | 5,306,927  |
+| Median Ride Length (Minutes)            | 10.98333   |
+| Average Ride Length (Minutes)           | 17.82178   |
+| Average Ride Distance (Euclidean Miles) | 1.330376  |
+
+<details>
+<summary>Click to view code</summary>
+
 ```r
+general_summary <- all_trips3 %>%
+  group_by() %>%
+  summarize("Total Number of Rides" = n(),
+            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
+            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
+            "Average Ride Distance (Euclidean Miles)" = mean(geo_distance_meters*.00062137))
+View(general_summary)
+```
+</details>
+
+
+
+### 1. How do the number of rides, average ride duration, and ride distance differ between casual riders and subscribing members? #################################################
+
+**Key observations:**
+
+- Subscribers account for approximately 59% of the rides, while casual riders contribute 41%.
+- Casual riders have rides that are nearly twice as long as those of subscribers on average.
+- Both groups travel similar average distances, but casual riders cover slightly more.
+
+
+#### Ride Count
+The bar chart below highlights the **total number of rides** taken by each rider type. Subscribers have a significantly higher ride count, aligning with their more regular usage patterns.
+
+![total_number_of_rides](assets/total_number_rides.png)
+<details>
+<summary>Click to view code</summary>
+
+```r
+# 1a. Ride Count bar chart (Casual/Subscriber)
+ggplot(member_summary, aes(x = member_casual, y = `Total Rides`, fill = member_casual)) +
+  geom_col(color = "black") +
+  geom_text(aes(label = `Total Rides`), vjust = -0.5, size = 4) +
+  labs(title = "Total Number of Rides (Casual/Annual Subscriber)",
+       x = "Rider Type",
+       y = "Total Number of Rides") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+```
+</details>
+
+#### Ride Length
+The density chart below shows the distribution of ride durations. Casual riders consistently have longer rides, with their **average duration (25.05 minutes)** nearly doubling that of **subscribers (12.69 minutes)**.
+
+![ride_length_member_type](assets/ride_length_by_membership.png)
+<details>
+<summary>Click to view code</summary>
+
+``` r
+# 1b.Avg Ride Length
+ggplot(all_trips3, aes(x = ride_length_sec / 60, fill = member_casual)) +
+  geom_density(alpha = 0.7) +
+  geom_vline(xintercept = 12.69740, linetype = "dashed", color = "#4095A5", size = 1.2) +
+  geom_vline(xintercept = 25.05755, linetype = "dashed", color = "#D9E62C", size = 1.2) +
+  annotate("text", x = 11.5, y = 0.062, label = "Avg for Subscribers: 12.69 Mins", angle = 90, color = "black") +
+  annotate("text", x = 23.8, y = 0.062, label = "Avg for Casual Riders: 25.05 Mins", angle = 90, color = "black") +
+  labs(title = "Casual Riders Have Longer Ride Durations: Density of Ride Length",
+       x = "Ride Length (Minutes)",
+       y = "Density") +
+  scale_x_continuous(breaks = seq(0, 120, by = 10), limits = c(0, 120)) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+```
+</details>
+
+
+#### Ride Distance
+Both casual riders and subscribers travel **similar average distances**, though casual riders travel slightly farther. This could be indicative of more leisurely or exploratory rides.
+
+![ride_length_member_type](assets/avg_ride_distance.png)
+<details>
+<summary>Click to view code</summary>
+
+``` r
+# 1c. Avg Ride Distance
+ggplot(member_summary, aes(x = member_casual, y = `Avg Ride Distance (euclidean Miles)`, fill = member_casual)) +
+  geom_col(color = "black") +
+  geom_text(aes(label = round(`Avg Ride Distance (euclidean Miles)`, 2)), vjust = -0.5, size = 4) +
+  labs(title = "Average Ride Distance (Straight-Line Miles)",
+       x = "Rider Type",
+       y = "Euclidean Miles") +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+```
+</details>
+
+
+
+
+
+
+
+
+
+### 2. Which days (e.g., weekdays vs. weekends) and seasons see the highest usage from casual riders and subscribing members #######################
+**Key Findings**
+
+
+Weekdays vs. Weekends:
+
+- Casual riders primarily use the service on weekends, reflecting recreational or leisure use.
+- Subscribers show consistent usage throughout the week, indicating routine commutes or errands.
+
+
+Seasonality:
+- Casual riders show a strong preference for warmer months (May to September), with a significant decline in usage during winter.
+- Subscribers maintain steady usage across all seasons, with slight increases during spring and summer.
+
+#### Weekly Ride Count
+The bar chart below illustrates the difference of total rides throughout the week between the two rider types.
+
+![memberhip_weekly_ride_count](assets/membership_weekly_ride_count.png)
+<details>
+<summary>Click to view code</summary>
+
+``` r
+# 2a. Bar chart for weekly ride count
+ggplot(all_trips3 %>%
+         group_by(member_casual, weekday) %>%
+         summarize(total_rides = n()),
+       aes(x = weekday, y = total_rides, fill = member_casual)) +
+  geom_col(color = "black", position = "dodge") +
+  labs(title = "Total Rides by Weekday (Casual vs. Annual Subscriber)",
+       x = "Weekday",
+       y = "Total Rides") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+```
+</details>
+
+
+
+#### Monthly Ride Count
+This bar chart highlights seasonal trends in ride usage, showing peak usage in September. 
+
+![memberhip_weekly_ride_count](assets/month_ride_membership.png)
+<details>
+<summary>Click to view code</summary>
+
+``` r
+# 2b. Bar chart for monthly ride count
+ggplot(all_trips3 %>%
+         group_by(member_casual, month) %>%
+         summarize(total_rides = n()),
+       aes(x = month, y = total_rides, fill = member_casual)) +
+  geom_col(color = "black", position = "dodge") +
+  labs(title = "Total Rides by Month (Casual vs. Annual Subscriber)",
+       x = "Month",
+       y = "Total Rides") +
+  scale_y_continuous(labels = scales::comma_format()) +
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
+```
+</details>
+
+
+
+
+
+### 3. What are the most popular starting and ending locations for casual riders? ###############
+**Key Findings**
+- The most frequently used stations by casual riders are clustered around key recreational and high-traffic areas.
+- Starting and ending stations are nearly identical, suggesting casual riders tend to return to their starting points or use stations located in highly popular areas.
+- Popular stations stand out significantly in both total ride counts and geographic clustering.
+
+
+#### Top 10 Stations Bar Chart
+The bar chart below combines starting and ending locations into a single visualization to highlight the most frequently used stations by casual riders.
+
+![memberhip_weekly_ride_count](assets/pop_stations_chart.png)
+<details>
+<summary>Click to view code</summary>
+
+```r
+# 3a. Top 10 stations
+# since both start and end stations are identical, combine to condense presentation
+# Combine start and end station counts into a single summary
+popular_stations <- all_trips3 %>%
+  filter(member_casual == "casual") %>%
+  pivot_longer(cols = c(start_station_name, end_station_name), values_to = "station_name") %>%
+  count(station_name, name = "total_rides", sort = TRUE) %>%
+  slice_head(n = 10)
+
+# Popular stations bar chart
+ggplot(popular_stations, aes(x = reorder(station_name, total_rides), y = total_rides)) +
+  geom_col(color = "black", fill = "#F2FC67") +
+  coord_flip() +
+  labs(title = "Top 10 Stations for Casual Riders (Start and End Combined)",
+       x = "Station Name",
+       y = "Total Rides") +
+  scale_y_continuous(labels = scales::comma_format())
+```
+</details>
+
+
+
+#### Popular Stations Map
+The map below show the geographic distribution of the most popular stations for casual riders. These stations are emphasized in lime green to distinguish them from less frequently used locations.
+
+![memberhip_weekly_ride_count](assets/pop_stations_map.png)
+<details>
+<summary>Click to view code</summary>
+
+```r
+# 3b. popular station map
 # Create a station list to have one set of coordinates per station
 map_station_list <- full_station_list %>% 
   distinct(station_id, station_name, .keep_all = T)
 
-# Create a cluster leaflet map
-stations_map_cluster <- leaflet(map_station_list) %>%
+
+# Add a flag to indicate whether each station is popular
+map_station_list <- map_station_list %>%
+  mutate(is_popular = ifelse(station_name %in% popular_stations$station_name, TRUE, FALSE))
+
+
+# Create the combined map (popular stations in Lime)
+stations_map_highlight <- leaflet(map_station_list) %>%
   addProviderTiles(provider = "Stadia.AlidadeSmoothDark") %>%
   setView(lng = -87.70, lat = 41.85,
           zoom = 11) %>%
-  addMarkers(lng = ~lng, lat = ~lat,
-             popup = ~paste("Station ID: ", station_id, "<br>Station Name: ", station_name),
-             clusterOptions = markerClusterOptions())
-stations_map_cluster
+  addCircleMarkers(
+    lng = ~lng, lat = ~lat,
+    popup = ~paste("Station Name: ", station_name),
+    radius = ~ifelse(is_popular, 14, 2),
+    color = ~ifelse(is_popular, "#F2FC67", "#577B8A"),
+    fillOpacity = 0.9)
+stations_map_highlight
 ```
-
-![station_map](assets/stations_cluster_map.png)
-
-
-
-### 1. What are the overall riding patterns of our users? #################################################
-``` r
-# General overview of stats
-general_summary <- all_trips3 %>%
-  group_by() %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(general_summary)
-```
-General riding behaviours:
-- Total number of rides exceeds 5 million trips, indicating a high level of volume with the bike-share service.
-- The average ride distance is about 1.33 miles, and the average ride length is 17.82 minutes.
-- The high standard deviation compared to the average length indicates a notable range in ride length.
-- The shortest ride is 1 second, while the longest ride extends to about 678 hours.
-
-#### Summary of Rides
-
-|                                          | Total Number of Rides | Shortest Ride Length (Seconds) | Median Ride Length (Minutes) | Average Ride Length (Minutes) | Longest Ride Length (Minutes) | Standard Deviation (Minutes) | Interquartile Range (Minutes) | 95th Percentile of Ride Length (Minutes) | 99th Percentile of Ride Length (Minutes) | Average Ride Distance (Euclidean) (Miles) | Longest Ride Distance (Euclidean) (Miles) |
-|------------------------------------------------|-----------------------|-------------------------------|------------------------------|------------------------------|-------------------------------|------------------------------|------------------------------|-------------------------------------------|-------------------------------------------|---------------------------------------------|--------------------------------------------|
-|                               | 5,306,927             | 1                             | 10.98                        | 17.82                        | 40,705.02                     | 70.73                        | 13.27                        | 48.42                                     | 110.87                                    | 1.33                                       | 19.09                                      |
-
-
-
-#### Distribution of Rides Under 120 Minutes
-
-``` r
-# A general re-examination of the distribution of ride length (Limited to 120 Minutes)
-ggplot(all_trips3, aes(x = ride_length_sec/60)) +
-  geom_boxplot(fill = "darkblue", outlier.color = "darkred", alpha = 0.1) +
-  labs(title = "Distribution of Rides under 120 minutes",
-       x = "Ride Length (minutes)",
-       y = "") +
-  annotate("Text", x = 62.5, y = 0.045, label = "Outliers", size = 5) +
-  scale_x_continuous(breaks = seq(0, 120, by = 10), limits = c(0, 120))
-```
-![rides_under_120_boxplot](assets/rides_under_120_boxplot.png)
+</details>
 
 
 
 
-### 2. What are the differences between member and casual riders? #################################################
-``` r
-# Members statistics
-member_summary <- all_trips3 %>%
-  group_by(member_casual) %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(member_summary)
-```
-
-Differences between member and casual riders:
-- Significantly higher standard deviation for casual riders suggests that there is more variability in their ride lengths.
-- Casual riders tend to have longer ride durations compared to members, both in terms of median and average ride lengths. 
-- Members take more frequent and shorter rides, indicating regular and possibly commuting when riding. 
-
-#### Summary of Rides by User Type
-| Member Type | Total Number of Rides | Shortest Ride Length (Seconds) | Median Ride Length (Minutes) | Average Ride Length (Minutes) | Longest Ride Length (Minutes) | Standard Deviation (Minutes) | Interquartile Range (Minutes) | 95th Percentile of Ride Length (Minutes) | 99th Percentile of Ride Length (Minutes) | Average Ride Distance (Euclidean) (Miles) | Longest Ride Distance (Euclidean) (Miles) |
-|-------------|-----------------------|--------------------------------|------------------------------|-------------------------------|-------------------------------|-------------------------------|-----------------------------------------|------------------------------------------|------------------------------------------|--------------------------------------------|-------------------------------------------|
-| Casual      | 2,193,329             | 1                              | 14.38                        | 25.11                         | 40,705.02                     | 107.38                        | 18.17                                  | 74.75                                    | 151.93                                   | 1.37                                       | 19.09                                    |
-| Member      | 3,113,598             | 1                              | 9.22                         | 12.69                         | 1,499.90                      | 18.45                         | 10.25                                  | 33.03                                    | 50.93                                    | 1.30                                       | 17.23                                    |
 
 
-#### Total Number of Rides
-``` r
-# Bar chart of total number of rides
-ggplot(member_summary, aes(x = member_casual, y = `Total Number of Rides`, fill = member_casual)) +
-  geom_col() +
-  geom_text(aes(label = `Total Number of Rides`), vjust = -0.5, size = 4) +
-  labs(title = "Total Number of Rides (Casual/Member)",
-       x = "Rider Type",
-       y = "Total Number of Rides") +
-  scale_y_continuous(labels = scales::comma_format()) +
-  scale_fill_brewer(palette = "Dark2")
-```
-![total_number_of_rides](assets/total_number_rides.png)
+### 4. Which bike types are most frequently used by casual riders, and how does this compare to those of subscribing members? #################################################
+**Key Findings**
+- Both casual riders and subscribers show similar rankings in bike type usage, with the primary difference being the proportion of electric vs. classic bike usage.
+Bar Chart By Bike Type
+- Docked bikes are the least used by both groups, reflecting limited availability or less convenience.
 
+#### Bar Chart By Bike Type
+The bar chart below displays the total rides for each bike type, categorized by rider type:
 
-#### Distribution of Ride Length by Member Type
-``` r
-# Creating a density chart
-ggplot(all_trips3, aes(x = ride_length_sec / 60, fill = member_casual)) +
-  geom_density(alpha = 0.7) +
-  geom_vline(xintercept = 12.69740, linetype = "dotted", color = "darkorange", size = 0.85) +
-  geom_vline(xintercept = 25.05755, linetype = "dotted", color = "turquoise", size = 0.85) +
-  annotate("text", x = 11.5, y = 0.062, label = "Avg for Member Riders 12.69 Mins", angle = 90) +
-  annotate("text", x = 23.8, y = 0.062, label = "Avg for Casual Riders 25.05 Mins", angle = 90) +
-  labs(title = "Distribution of Ride Length by Membership Type (0 - 120 Minutes)",
-       x = "Ride Length (Minutes)",
-       y = "Density") +
-  scale_x_continuous(breaks = seq(0, 120, by = 10), limits = c(0, 120)) +
-  scale_fill_brewer(palette = "Dark2")
-```
-![ride_length_member_type](assets/ride_length_by_membership.png)
+![memberhip_weekly_ride_count](assets/membership_bike_type.png)
+<details>
+<summary>Click to view code</summary>
 
-
-### 3. Is there a notable difference between our members and casual riders week by week? ###############
 ```r
-# Weekly stats
-weekday_summary <- all_trips3 %>%
-  group_by(weekday, member_casual) %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(weekday_summary)
-```
-Differences between members and casual riders week by week:
-- The 95th and 99th percentile of ride length from casual riders are consistently 2-3 times longer than those from members. 
-- Casual riders tend to take longer and more variable rides, especially on weekends (Saturday and Sunday).
-- Members take more frequent but shorter and more consistent rides, particularly on weekdays (Wednesday being the highest).
-
-#### Summary of Rides by Weekday and User Type
-
-| Weekday  | Member Type | Total Number of Rides | Shortest Ride Length (Seconds) | Median Ride Length (Minutes) | Average Ride Length (Minutes) | Longest Ride Length (Minutes) | Standard Deviation (Minutes) | Interquartile Range (Minutes) | 95th Percentile of Ride Length (Minutes) | 99th Percentile of Ride Length (Minutes) | Average Ride Distance (Euclidean) (Miles) | Longest Ride Distance (Euclidean) (Miles) |
-|----------|--------------|-----------------------|--------------------------------|------------------------------|-------------------------------|-------------------------------|-------------------------------|-----------------------------------------|------------------------------------------|------------------------------------------|--------------------------------------------|-------------------------------------------|
-| Monday   | Casual       | 255,140               | 1                              | 14.47                        | 26.09                         | 32,035.45                     | 114.40                        | 19.42                                  | 79.23                                    | 156.03                                   | 1.32                                       | 18.09                                    |
-|          | Member       | 428,693               | 1                              | 8.85                         | 12.29                         | 1,499.90                      | 17.65                         | 9.88                                   | 32.50                                    | 49.58                                    | 1.27                                       | 15.70                                    |
-| Tuesday  | Casual       | 238,510               | 1                              | 12.53                        | 22.02                         | 15,482.97                     | 66.93                         | 15.30                                  | 66.68                                    | 141.78                                   | 1.32                                       | 17.44                                    |
-|          | Member       | 488,257               | 1                              | 8.77                         | 11.97                         | 1,499.90                      | 18.35                         | 9.48                                   | 30.83                                    | 46.40                                    | 1.28                                       | 14.51                                    |
-| Wednesday| Casual       | 253,820               | 1                              | 12.53                        | 21.57                         | 30,400.55                     | 96.92                         | 14.80                                  | 62.82                                    | 137.60                                   | 1.33                                       | 16.22                                    |
-|          | Member       | 500,360               | 1                              | 8.93                         | 12.07                         | 1,471.28                      | 17.10                         | 9.63                                   | 31.07                                    | 46.68                                    | 1.29                                       | 15.35                                    |
-| Thursday | Casual       | 278,348               | 1                              | 12.70                        | 22.04                         | 27,082.80                     | 107.64                        | 15.10                                  | 64.40                                    | 138.33                                   | 1.35                                       | 18.28                                    |
-|          | Member       | 490,641               | 1                              | 8.95                         | 12.19                         | 1,475.63                      | 17.96                         | 9.73                                   | 31.27                                    | 47.67                                    | 1.29                                       | 16.18                                    |
-| Friday   | Casual       | 314,419               | 1                              | 13.62                        | 23.38                         | 22,629.90                     | 92.36                         | 16.57                                  | 67.70                                    | 143.45                                   | 1.35                                       | 18.78                                    |
-|          | Member       | 439,661               | 1                              | 9.07                         | 12.44                         | 1,455.30                      | 17.88                         | 9.95                                   | 32.20                                    | 49.62                                    | 1.27                                       | 17.23                                    |
-| Saturday | Casual       | 468,269               | 1                              | 16.52                        | 27.80                         | 40,705.02                     | 116.85                        | 20.55                                  | 81.37                                    | 159.12                                   | 1.45                                       | 18.47                                    |
-|          | Member       | 410,355               | 1                              | 10.33                        | 14.24                         | 1,499.82                      | 20.34                         | 11.82                                  | 36.77                                    | 58.93                                    | 1.36                                       | 15.69                                    |
-| Sunday   | Casual       | 384,823               | 1                              | 16.80                        | 29.07                         | 32,858.53                     | 126.74                        | 21.40                                  | 85.55                                    | 166.35                                   | 1.42                                       | 19.09                                    |
-|          | Member       | 355,631               | 1                              | 10.13                        | 14.24                         | 1,476.70                      | 20.16                         | 11.95                                  | 37.40                                    | 60.07                                    | 1.34                                       | 15.69                                    |
-
-
-#### Weekly Ride Count by Membership
-``` r
-# Bar chart of the total number of rides by weekday
-ggplot(weekday_summary, aes(x = weekday, y = `Total Number of Rides`, fill = member_casual)) +
-  geom_col(position = "dodge") +
-  labs(title = "Memebrship Type's Ride Count (Weekday)",
-       x = "",
-       y = "Number of Rides") +
+# 4. Bike type
+# Create a grouped bar chart by bike type
+ggplot(all_trips3 %>%
+    group_by(member_casual, rideable_type) %>%
+    summarize(total_rides = n(), .groups = "drop") %>%
+    mutate(rideable_type = reorder(rideable_type, -total_rides)),
+  aes(x = rideable_type, y = total_rides, fill = member_casual)) +
+  geom_col(color = "black", position = "dodge") +
+  labs(title = "Bike Type Usage by Rider Type",
+    x = "Bike Type",
+    y = "Total Rides",
+    fill = "Rider Type") +
   scale_y_continuous(labels = scales::comma_format()) +
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_manual(values = c("casual" = "#F2FC67", "subscriber" = "#4095A5"))
 ```
-![memberhip_weekly_ride_count](assets/membership_weekly_ride_count.png)
-
-#### Average Ride Duration by Membership
-``` r
-# Bar chart of the average ride duration by member type (Weekday) 
-ggplot(weekday_summary, aes(x = weekday, y = `Average Ride Length (Minutes)`, fill = member_casual)) +
-  geom_col(position = "dodge") +
-  labs(title = "Memebrship Type's Average Ride Duration (Weekday)",
-       x = "",
-       y = "Avg Ride Length (Minutes)") +
-  scale_fill_brewer(palette = "Dark2")
-```
-![membership_weekly_avg_dur](assets/membership_weekly_avg_dur.png)
-
-
-### 4. How does rider behaviour change month to month? #################################################
-``` r
-# monthly stats
-month_summary <- all_trips3 %>%
-  group_by(month) %>%
-  summarize("Total Number of Rides" = n(),
-            "Shortest Ride Length (Seconds)" = min(ride_length_sec),
-            "Median Ride Length (Minutes)" = median(ride_length_sec/60),
-            "Average Ride Length (Minutes)" = mean(ride_length_sec/60),
-            "Longest Ride Length (Minutes)" = max(ride_length_sec/60),
-            "Standard Deviation (Minutes)" = sd(ride_length_sec/60),
-            "Interquartile Range (Minutes)" = IQR(ride_length_sec/60),
-            "95th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.95),
-            "99th Percentile of Ride Length (Minutes)" = quantile(ride_length_sec/60, probs = 0.99),
-            "Average Ride Distance (Euclidean) (Miles)" = mean(geo_distance_meters*.00062137),
-            "Longest Ride Distance (Euclidean) (Miles)" = max(geo_distance_meters*.00062137))
-View(month_summary)
-```
-Insights to rider behaviour month to month:
-- Seasonality affects usage patterns, with higher activity during warmer months.
-- Summer months have higher upper percentile ride lengths, indicating more long trips during these months compared to winter months.
-- September is the month with the most trips: 1,200,467 rides while January has only 83,715 rides. 
-
-### Summary of Rides by Month
-
-| Month | Total Number of Rides | Shortest Ride Length (Seconds) | Median Ride Length (Minutes) | Average Ride Length (Minutes) | Longest Ride Length (Minutes) | Standard Deviation (Minutes) | Interquartile Range (Minutes) | 95th Percentile of Ride Length (Minutes) | 99th Percentile of Ride Length (Minutes) | Average Ride Distance (Euclidean) (Miles) | Longest Ride Distance (Euclidean) (Miles) |
-|-------|-----------------------|--------------------------------|------------------------------|-------------------------------|-------------------------------|-------------------------------|-----------------------------------------|------------------------------------------|------------------------------------------|--------------------------------------------|-------------------------------------------|
-| Jan   | 83,715                | 1                              | 7.90                         | 13.37                         | 29,271.10                     | 158.51                        | 8.38                                   | 29.87                                    | 59.39                                    | 1.08                                       | 14.47                                    |
-| Feb   | 92,634                | 1                              | 8.18                         | 13.30                         | 10,905.97                     | 63.23                         | 8.90                                   | 32.70                                    | 75.08                                    | 1.12                                       | 15.36                                    |
-| Mar   | 225,595               | 1                              | 9.83                         | 16.96                         | 34,354.07                     | 95.13                         | 12.36                                  | 45.37                                    | 101.92                                   | 1.27                                       | 18.50                                    |
-| Apr   | 285,724               | 1                              | 9.95                         | 16.41                         | 7,545.97                      | 37.47                         | 12.33                                  | 45.35                                    | 103.48                                   | 1.27                                       | 13.46                                    |
-| May   | 519,961               | 1                              | 12.05                        | 19.58                         | 10,722.97                     | 38.57                         | 15.18                                  | 56.48                                    | 122.17                                   | 1.36                                       | 19.09                                    |
-| Jun   | 640,354               | 1                              | 12.18                        | 19.02                         | 6,672.87                      | 33.71                         | 14.40                                  | 52.45                                    | 118.55                                   | 1.39                                       | 18.78                                    |
-| Jul   | 668,866               | 1                              | 12.02                        | 19.04                         | 32,035.45                     | 53.55                         | 14.52                                  | 54.08                                    | 119.02                                   | 1.38                                       | 18.47                                    |
-| Aug   | 632,268               | 1                              | 11.25                        | 17.57                         | 4,848.35                      | 30.46                         | 13.25                                  | 48.65                                    | 110.38                                   | 1.36                                       | 18.09                                    |
-| Sep   | 1,200,467             | 1                              | 11.38                        | 18.45                         | 32,858.53                     | 82.57                         | 13.48                                  | 49.73                                    | 113.93                                   | 1.36                                       | 18.34                                    |
-| Oct   | 499,464               | 1                              | 10.70                        | 17.73                         | 40,705.02                     | 96.95                         | 12.67                                  | 46.12                                    | 107.01                                   | 1.31                                       | 17.99                                    |
-| Nov   | 270,286               | 1                              | 8.93                         | 14.18                         | 22,279.73                     | 80.47                         | 9.97                                   | 35.97                                    | 76.85                                    | 1.20                                       | 15.44                                    |
-| Dec   | 187,593               | 1                              | 8.67                         | 14.25                         | 30,400.55                     | 126.14                        | 9.58                                   | 34.22                                    | 73.20                                    | 1.19                                       | 14.01                                    |
-
-
-#### Monthly Ride Count by Membership
-``` r
-# Bar chart of monthly ride count by membership type
-all_trips3 %>% 
-  group_by(month, member_casual) %>% 
-  summarize("Number of Rides" = n()) %>% 
-  ggplot(aes(x = month, y = `Number of Rides`, fill = member_casual)) +
-  geom_col(position = "dodge") +
-  labs(title = "Ride Count by Membership Type (Month)",
-       x = "",
-       y = "Ride Count") +
-  scale_y_continuous(labels = scales::comma_format()) +
-  scale_fill_brewer(palette = "Dark2")
-```
-![month_ride_membership](assets/month_ride_membership.png)
-
-
-#### Monthly Average Ride Duration by Membership
-``` r
-# Bar chart of monthly average ride by membership type
-all_trips3 %>%
-  group_by(month, member_casual) %>%
-  summarize(average_duration = mean(ride_length_sec/60)) %>%
-  ggplot(aes(x = month, y = average_duration, fill = member_casual)) +
-  geom_col(position = "dodge") + 
-  labs(title = "Average Ride Duration by Membership Type (Month)",
-       x = "", 
-       y = "Ride Duration (Minutes)") +
-  scale_fill_brewer(palette = "Dark2")
-```
-![month_avg_member](assets/month_avg_membership.png)
-
+</details>
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Conclusion
 ## Key Findings
-- Ride usage peaks during warmer months (May to September), with the highest number of rides in September.
-- Casual riders generally take longer rides compared to members, both in terms of median and average ride lengths.
-- Annual members consistently use the service for shorter, more frequent rides, indicating commuting or routine travel.
-- Casual riders show higher variability and take longer rides during weekends and warmer months, which may be an indication of recreational use.
-- There are sharp declines in ride count and ride lengths during January and February. 
-- Casual members amount to approximately 41.32% of the rides, while annual members amount to about 58.67% of the total rides.
+#### General
+- Ride usage peaks during warmer months, with September seeing the highest activity and January the lowest.
+- Casual riders account for 41.32% of rides, while subscribers make up 58.67%.
+- Classic bikes are the most popular choice for both groups, followed by electric bikes.
+- Outliers in ride length, especially for docked bikes, highlight potential data accuracy issues.
+
+#### Casual Riders
+- Casual riders average longer trips at 25 minutes compared to 12 minutes for subscribers.
+- Casual users dominate weekend rides, showing greater variability and are likely due to recreational use.
+
+#### Annual Subscribing Members
+- Subscribers consistently use the service throughout the week, with no significant drop-off between weekdays and weekends.
+- Annual subscribing members consistently use the service for shorter, more frequent rides, indicating commuting or routine travel.
+
 
 
 ## Recommendations 
-1.  Introduce flexible membership options that would cater towards current casual riders. A tier membership that would allow for weekend riders to subscribe to “Weekend-only” or “Summer-Passes” could be more appealing.
-2.  Introducing a tracking system that enables riders to monitor their distance and time could “gamify” the experience. It’s evident that casual riders pursue longer rides, so the capability to share notable achievements would not only foster a natural sense of competition but also a sense of community among our riders.
-3.  We can further encourage a sense of community by rewarding casual riders who use Social Media to engage with our service This can be done with promotional prices or free weekend trials for those who participate.
-4. Launch targeted marketing campaigns during seasonal peak times that promote weekend sales and memberships.
-5. Creating better monitor systems to to improve data quality would lead to more accurate assessments and insights.
+#### 1. Introduce Additional Membership Options
 
-## Closing Thoughts
-In conclusion, this analysis gives us a clear look into the preferences and behaviors of Cyclistic members and casual riders. By applying our strategies to these insights, we can effectively turn casual riders into loyal members.
+Introduce flexible membership options that would cater towards current casual riders. A tier membership that would allow for weekend riders to subscribe to "Weekend Memberships or “Seasonal Passes” could leverage peak times for the casual base.
+
+#### 2. Enhance Access to Preferred Bike Types
+
+While classic bikes are the most used, this may be due to limited availability of electric bikes. By verifying rider preferences and ensuring a sufficient supply of preferred bikes at key locations, we can attract more riders and improve satisfaction.
+
+#### 3. Promote a Sense of Community
+
+Create engaging features that allow riders to track and share ride statistics, achievements, or distances. Casual riders may find value in competing with friends or unlocking rewards for completing milestones. 
+
+#### 4. Offer Exclusive Perks for Subscribers
+Provide added value for subscribers through benefits like priority access to electric bikes or discounts at businesses near high-traffic stations. This could make it more appealing for casual riders to considering an upgrade.
