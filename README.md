@@ -4,11 +4,11 @@
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Introduction
-This repository contains an analysis of data from **Cyclistic**, a fictional bike-share company based in Chicago. The overall objective is to uncover insights to develop a marketing strategy to convert casual riders into annual members. By analyzing Cyclistic’s bike trip data, we aim to understand how different types of customers use the service and identify opportunities to encourage casual riders to purchase annual memberships.
+This project explores ride data from Cyclistic, a fictional bike-share company based in Chicago. The goal is to figure out how casual riders use the service and uncover ways to encourage them to become annual members. By looking into trip patterns, ride lengths, and usage trends, I worked to surface insights that could shape a smarter, more targeted marketing strategy.
 
 ### The analysis will seek to answer the following questions:
 1. How do the number of rides, average ride duration, and ride distance differ between casual riders and subscribing members?
-2. Which days (e.g., weekdays vs. weekends) and seasons see the highest usage from casual riders and subscribing members?"
+2. Which days (e.g., weekdays vs. weekends) and seasons see the highest usage from casual riders and subscribing members?
 3. What are the most popular locations for casual riders?
 4. Which bike types are most frequently used by casual riders, and how does this compare to those of subscribing members?
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -16,12 +16,12 @@ This repository contains an analysis of data from **Cyclistic**, a fictional bik
 - **Excel**: For CSV management
 - **Git/GitHub**: For version control and uploading my findings
 - **R**: For data wrangling, analysis, and visualization
-- **RStudio**: The primary enviornment used for scripting
+- **RStudio**: The primary environment used for scripting
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 # Data Source
-The analysis is based on **Cyclistic’s** CSV trip data, which includes information about each ride taken with the service over the past year. The dataset covers various aspects of the rides, such as start/end times, station names, ride length, and user type (casual or subscribing member). You can access the updated data souce [here](https://divvy-tripdata.s3.amazonaws.com/index.html) or within the [data folder](data) of this repository.
+The analysis is based on **Cyclistic’s** CSV trip data, which includes information about each ride taken with the service over the past year. The dataset covers various aspects of the rides, such as start/end times, station names, ride length, and user type (casual or subscribing member). You can access the updated data source [here](https://divvy-tripdata.s3.amazonaws.com/index.html) or within the [data folder](data) of this repo.
 
 
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -103,9 +103,9 @@ View(all_trips)
 ## Data Wrangling #################################################
 ### Extrapolation of Dates and Ride Length
 To prepare for analysis of temporal trends and ride characteristics, several new columns were created:
-- **Month** and **Weekday** were extracted from the ride start time to analyze seasonal and weekly patterns.
-- **Ride Length** was calculated as the duration of each ride in seconds to compare usage behaviors.
-- The term **"members"** was renamed to **"subscribers"** for greater clarity and consistency with the business goal of converting casual riders into subscribing members.
+- **Month** and **Weekday** were pulled from the ride start time to spot trends by season and day of the week.
+- **Ride Length** was calculated in seconds so I could compare how long different riders typically use the service.
+- I also renamed the rider category **"member"** to **"subscriber"** to better align with the project’s focus on converting casual riders.
 
 
 <details>
@@ -144,11 +144,11 @@ all_trips <- all_trips %>%
 
 
 ### Addressing Missing Station Names #################################################
-To enhance data accuracy and completeness, missing station names and IDs were populated using the coordinates of known stations. This process ensured that:
-- Missing start and end station names/IDs were filled when possible using station coordinates.
-- Stations with ambiguous coordinates (e.g., multiple stations sharing the same coordinates) were excluded to maintain data reliability.
+Some station names and IDs were missing from the data, so I used the ride coordinates to fill in the blanks where possible. Here's how I handled it:
+- If a ride had valid start or end coordinates, I matched them to known station locations to recover the missing info.
+- If multiple stations shared the same coordinates (yep, that happens), I left those entries out to avoid mismatching and keep things accurate.
 
-#### Recovered Stations Names and Id's
+#### Recovered Stations Names and IDs
 | Data Frame            | start_station_name | start_station_id | end_station_name | end_station_id |
 |-----------------------|--------------------|------------------|------------------|----------------|
 | all_trips             | 988,145            | 988,143          | 1,057,488        | 1,057,488      |
@@ -222,7 +222,7 @@ print(colSums(is.na(all_trips2)))
 
 
 ### Identifying Extreme Outliers #################################################
-After reviewing the overall data significant outliers were identified in ride length, with values exceeding typical ride durations. Suggesting potential data entry errors and the need for careful handling of extreme outliers.
+A closer look at ride lengths revealed some significant outliers. In several cases, the durations were far beyond what would be expected for a typical trip. These unusually long rides were likely caused by data entry errors or riders forgetting to end their trips. To prevent these extreme values from distorting the analysis, they were flagged and addressed during the data cleaning process.
 
 #### Ride Length Distribution Summary (Seconds)
 <details>
@@ -298,7 +298,7 @@ This histogram highlights the ride length distribution for each bike type on a l
 <summary>Click to view code</summary>
 
 ``` r
-# Creating log distrubtion of ride length by bike type chart
+# Creating log distribution of ride length by bike type chart
 ggplot(all_trips2, aes(x = ride_length_sec/3600, fill = rideable_type)) +
   geom_histogram(binwidth = 10, color = "black") +
   labs(title = "Distribution of Ride Length (Split by Bike Type, Log10 scale)",
@@ -315,9 +315,9 @@ ggplot(all_trips2, aes(x = ride_length_sec/3600, fill = rideable_type)) +
 
 
 #### Cleaning Erroneous Data and Calculating Distance
-Additional data cleaning was conducted to address invalid trips and calculate the distances traveled:
+Additional data cleaning was done to address invalid trips and calculate the distances traveled:
 
-- **Distance Calculation:** The Haversine formula was applied to calculate the straight-line (Euclidean) distance between start and end points for each ride.
+- **Distance Calculation:** The Haversine formula was used to calculate the straight-line (Euclidean) distance between start and end points for each ride.
 - **Filtering Invalid Trips:** The following were identified as invalid and excluded:
   1. Rides with non-positive durations.
   2. Rides with zero distances lasting 60 seconds or less.
@@ -329,7 +329,7 @@ Additional data cleaning was conducted to address invalid trips and calculate th
 
 ``` r
 # Calculate the distance using the Haversine formula (Output is in meters)
-# This is euclidean distance and is not a reflection of of road network distance
+# This is euclidean distance and is not a reflection of road network distance
 all_trips2 <- all_trips2 %>%
   rowwise() %>% 
   mutate(geo_distance_meters = distHaversine(c(start_lng, start_lat), c(end_lng, end_lat)))
@@ -383,7 +383,7 @@ View(general_summary)
 
 **Key observations:**
 
-- Subscribers account for approximately 59% of the rides, while casual riders contribute 41%.
+- Subscribers account for about 59% of the rides, while casual riders contribute 41%.
 - Casual riders have rides that are nearly twice as long as those of subscribers on average.
 - Both groups travel similar average distances, but casual riders cover slightly more.
 
@@ -561,7 +561,7 @@ ggplot(popular_stations, aes(x = reorder(station_name, total_rides), y = total_r
 
 
 #### Popular Stations Map
-The map below show the geographic distribution of the most popular stations for casual riders. These stations are emphasized in lime green to distinguish them from less frequently used locations.
+The map below shows the geographic distribution of the most popular stations for casual riders. These stations are highlighted in lime green to distinguish them from less frequently used locations.
 
 ![memberhip_weekly_ride_count](assets/pop_stations_map.png)
 <details>
@@ -598,12 +598,11 @@ stations_map_highlight
 
 
 
-
 ### 4. Which bike types are most frequently used by casual riders, and how does this compare to those of subscribing members? #################################################
 **Key Findings**
 - Both casual riders and subscribers show similar rankings in bike type usage, with the primary difference being the proportion of electric vs. classic bike usage.
 Bar Chart By Bike Type
-- Docked bikes are the least used by both groups, reflecting limited availability or less convenience.
+- Docked bikes are the least used by both groups, showing limited availability or less convenience.
 
 #### Bar Chart By Bike Type
 The bar chart below displays the total rides for each bike type, categorized by rider type:
@@ -638,14 +637,14 @@ ggplot(all_trips3 %>%
 - Ride usage peaks during warmer months, with September seeing the highest activity and January the lowest.
 - Casual riders account for 41.32% of rides, while subscribers make up 58.67%.
 - Classic bikes are the most popular choice for both groups, followed by electric bikes.
-- Outliers in ride length, especially for docked bikes, highlight potential data accuracy issues.
+- Outliers in ride length, especially for docked bikes, point towards potential data accuracy issues.
 
 #### Casual Riders
 - Casual riders average longer trips at 25 minutes compared to 12 minutes for subscribers.
 - Casual users dominate weekend rides, showing greater variability and are likely due to recreational use.
 
 #### Annual Subscribing Members
-- Subscribers consistently use the service throughout the week, with no significant drop-off between weekdays and weekends.
+- Subscribers tend to ride consistently throughout the week, with little difference between weekdays and weekends.
 - Annual subscribing members consistently use the service for shorter, more frequent rides, indicating commuting or routine travel.
 
 
@@ -653,15 +652,16 @@ ggplot(all_trips3 %>%
 ## Recommendations 
 #### 1. Introduce Additional Membership Options
 
-Introduce flexible membership options that would cater towards current casual riders. A tier membership that would allow for weekend riders to subscribe to "Weekend Memberships or “Seasonal Passes” could leverage peak times for the casual base.
+Introduce flexible membership options that could give casual riders a reason to stick around, especially during peak seasons.
 
-#### 2. Enhance Access to Preferred Bike Types
+#### 2. Improve Access to Preferred Bike Types
 
-While classic bikes are the most used, this may be due to limited availability of electric bikes. By verifying rider preferences and ensuring a sufficient supply of preferred bikes at key locations, we can attract more riders and improve satisfaction.
+Classic bikes are used the most, but that might just be because they’re more available. Making sure popular bike types, like electric bikes, are easy to find at busy stations could help improve the rider experience and meet actual demand.
 
 #### 3. Promote a Sense of Community
 
-Create engaging features that allow riders to track and share ride statistics, achievements, or distances. Casual riders may find value in competing with friends or unlocking rewards for completing milestones. 
+Create engaging features that allow riders to track and share ride stats, achievements, or distances. Casual riders may be more likely to return when the experience feels rewarding.
 
 #### 4. Offer Exclusive Perks for Subscribers
-Provide added value for subscribers through benefits like priority access to electric bikes or discounts at businesses near high-traffic stations. This could make it more appealing for casual riders to considering an upgrade.
+
+Perks like early access to electric bikes or discounts at nearby businesses can make a subscription feel more valuable. Small benefits like these could help nudge casual riders toward upgrading.
